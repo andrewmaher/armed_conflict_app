@@ -26,41 +26,27 @@ df.exp <- join(df.exp,ddply(df,c('ID','YEAR'),summarize,
   SideB2nd = separate_comma_string(SideB2nd)),by=c('ID','YEAR'))
 
 # Create edge list
-# Side A edges
-ind <- which(df.exp[,'SideA']!='')
-edges <- data.frame(year=df.exp[ind,'YEAR'],
-  source=df.exp[ind,'SideA'],
-  target=df.exp[ind,'ID'],
-  stringsAsFactors=F)
-ind <- which(df.exp[,'SideA2nd']!='')
-edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
-  source=df.exp[ind,'SideA2nd'],
-  target=df.exp[ind,'ID'],
-  stringsAsFactors=F))
+# Supportive edges
 ind <- intersect(which(df.exp[,'SideA']!=''),which(df.exp[,'SideA2nd']!=''))
-edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
+edges <- data.frame(year=df.exp[ind,'YEAR'],
   source=df.exp[ind,'SideA2nd'],
   target=df.exp[ind,'SideA'],
-  stringsAsFactors=F))
-edges <- edges[!duplicated(edges),]
-
-# Side B edges
-ind <- which(df.exp[,'SideB']!='')
-edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
-  source=df.exp[ind,'SideB'],
-  target=df.exp[ind,'ID'],
-  stringsAsFactors=F))
-ind <- which(df.exp[,'SideB2nd']!='')
-edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
-  source=df.exp[ind,'SideB2nd'],
-  target=df.exp[ind,'ID'],
-  stringsAsFactors=F))
+  type=rep('supportive',length(ind)),
+  stringsAsFactors=F)
 ind <- intersect(which(df.exp[,'SideB']!=''),which(df.exp[,'SideB2nd']!=''))
 edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
   source=df.exp[ind,'SideB2nd'],
   target=df.exp[ind,'SideB'],
+  type=rep('supportive',length(ind)),
   stringsAsFactors=F))
-edges <- edges[!duplicated(edges),]
+# Opposing edges
+ind <- intersect(which(df.exp[,'SideA']!=''),which(df.exp[,'SideB']!=''))
+edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
+  source=df.exp[ind,'SideA'],
+  target=df.exp[ind,'SideB'],
+  type=rep('opposing',length(ind)),
+  stringsAsFactors=F))
+edges <- unique(edges)
 
 edges <- arrange(edges,year,target,source)
 
