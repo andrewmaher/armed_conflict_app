@@ -1,13 +1,44 @@
 <style>
 
-.node {
-  stroke: #fff;
+path.link {
+  fill: none;
+  stroke: #666;
   stroke-width: 1.5px;
 }
 
-.link {
-  stroke: #999;
-  stroke-opacity: .6;
+marker#opposing {
+  fill: red;
+}
+
+path.link.opposing {
+  stroke: red;
+}
+
+marker#supportive {
+  fill: green;
+}
+
+path.link.supportive {
+  stroke: green;
+  stroke-dasharray: 0,2 1;
+  opacity: 0.5;
+}
+
+marker#opposingdirected {
+  fill: red;
+}
+
+path.link.opposingdirected {
+  stroke: red;
+  stroke-dasharray: 0,2 1;
+  opacity: 0.5
+}
+
+
+circle {
+  fill: #ccc;
+  stroke: #333;
+  stroke-width: 1.5px;
 }
 
 text {
@@ -15,10 +46,17 @@ text {
   pointer-events: none;
 }
 
+text.shadow {
+  stroke: #fff;
+  stroke-width: 3px;
+  stroke-opacity: .8;
+}
+
 </style>
 
-<script src="http://d3js.org/d3.v2.js?2.9.1"></script>
-<script src="http://d3js.org/d3.v2.js"></script>
+<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?1.29.1"></script>
+<script type="text/javascript" src="http://mbostock.github.com/d3/d3.geom.js?1.29.1"></script>
+<script type="text/javascript" src="http://mbostock.github.com/d3/d3.layout.js?1.29.1"></script>
 <script type="text/javascript">var networkOutputBinding = new Shiny.OutputBinding();
   $.extend(networkOutputBinding, {
     find: function(scope) {
@@ -36,80 +74,88 @@ text {
       
       $(el).html("");
       
-      var vis = d3.select(el)
-        .append("svg:svg")
+      var svg = d3.select(el).append("svg:svg")
           .attr("width", w)
-          .attr("height", h)
-          .attr("pointer-events", "all")
-        .append('svg:g')
-          .call(d3.behavior.zoom()
-              .scaleExtent([0.1,5])
-              .on("zoom", redraw))
-        .append('svg:g');
+          .attr("height", h);
 
-      vis.append('svg:rect')
-          .attr('width', w/0.2*5)
-          .attr('height', h/0.2*5)
-          .attr('fill', 'white');
-
-      function redraw() {
-        vis.attr("transform",
-            "translate(" + d3.event.translate + ")"
-            + " scale(" + d3.event.scale + ")");
-      }
-
-      var draw = function(data) {
-        //format nodes object
-        var nodes = new Array();
-        for (var i = 0; i < data.names.length; i++){
-          nodes.push({"name": data.names[i]})
-        }
-        
-        var force = d3.layout.force()
-            .charge(-1000)
-            .linkDistance(30)
-            .nodes(nodes)
-            .links(data.links)
-            .size([w, h])
-            .start();
-
-        var link = vis.selectAll(".link")
-            .data(force.links())
-          .enter().append("svg:line")
-            .attr("class", "link");
-
-        var node = vis.selectAll("circle.node")
-            .data(force.nodes())
-          .enter().append("svg:circle")
-            .attr("class", "node")
-            .attr("r", 5)
-            .call(force.drag);
-
-        var text = vis.selectAll("g")
-            .data(force.nodes())
-              .enter().append("svg:g");
+      var links = data.links;
       
-        text.append("svg:text")
-            .attr("x", 9)
-            .attr("y", ".31em")
-            .text(function(d) { return d.name; });
+      var nodes = {};
 
-        vis.style("opacity", 1e-6)
-          .transition()
-            .duration(1000)
-            .style("opacity", 1);
+      // Compute the distinct nodes from the links.
+      links.forEach(function(link) {
+        link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
+        link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
+      });
 
-        force.on("tick", function() {
-          link.attr("x1", function(d) { return d.source.x; })
-              .attr("y1", function(d) { return d.source.y; })
-              .attr("x2", function(d) { return d.target.x; })
-              .attr("y2", function(d) { return d.target.y; });
-      
-          text.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")";});
-          node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")";});
+      var force = d3.layout.force()
+          .nodes(d3.values(nodes))
+          .links(links)
+          .size([w, h])
+          .linkDistance(100)
+          .charge(-300)
+          .on("tick", tick)
+          .start();
+
+      // Per-type markers, as they don't inherit styles.
+      svg.append("svg:defs").selectAll("marker")
+          .data(["supportive","opposingdirected"])
+        .enter().append("svg:marker")
+          .attr("id", String)
+          .attr("viewBox", "0 -5 10 10")
+          .attr("refX", 15)
+          .attr("refY", -1.5)
+          .attr("markerWidth", 6)
+          .attr("markerHeight", 6)
+          .attr("orient", "auto")
+        .append("svg:path")
+          .attr("d", "M0,-5L10,0L0,5");
+
+      var path = svg.append("svg:g").selectAll("path")
+          .data(force.links())
+        .enter().append("svg:path")
+          .attr("class", function(d) { return "link " + d.type; })
+          .attr("marker-end", function(d) { return "url(#" + d.type + ")"; });
+
+      var circle = svg.append("svg:g").selectAll("circle")
+          .data(force.nodes())
+        .enter().append("svg:circle")
+          .attr("r", 6)
+          .call(force.drag);
+
+      var text = svg.append("svg:g").selectAll("g")
+          .data(force.nodes())
+        .enter().append("svg:g");
+
+      // A copy of the text with a thick white stroke for legibility.
+      text.append("svg:text")
+          .attr("x", 8)
+          .attr("y", ".31em")
+          .attr("class", "shadow")
+          .text(function(d) { return d.name; });
+
+      text.append("svg:text")
+          .attr("x", 8)
+          .attr("y", ".31em")
+          .text(function(d) { return d.name; });
+
+      // Use elliptical arc path segments to doubly-encode directionality.
+      function tick() {
+        path.attr("d", function(d) {
+          var dx = d.target.x - d.source.x,
+              dy = d.target.y - d.source.y,
+              dr = Math.sqrt(dx * dx + dy * dy);
+          return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
         });
-      };
-      draw(data);
+
+        circle.attr("transform", function(d) {
+          return "translate(" + d.x + "," + d.y + ")";
+        });
+
+        text.attr("transform", function(d) {
+          return "translate(" + d.x + "," + d.y + ")";
+        });
+      }
     }
   });
   Shiny.outputBindings.register(networkOutputBinding, 'trestletech.networkbinding');

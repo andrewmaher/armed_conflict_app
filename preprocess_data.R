@@ -46,6 +46,18 @@ edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
   target=df.exp[ind,'SideB'],
   type=rep('opposing',length(ind)),
   stringsAsFactors=F))
+ind <- intersect(which(df.exp[,'SideA2nd']!=''),which(df.exp[,'SideB']!=''))
+edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
+  source=df.exp[ind,'SideA2nd'],
+  target=df.exp[ind,'SideB'],
+  type=rep('opposingdirected',length(ind)),
+  stringsAsFactors=F))
+ind <- intersect(which(df.exp[,'SideA']!=''),which(df.exp[,'SideB2nd']!=''))
+edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
+  source=df.exp[ind,'SideB2nd'],
+  target=df.exp[ind,'SideA'],
+  type=rep('opposingdirected',length(ind)),
+  stringsAsFactors=F))
 edges <- unique(edges)
 
 edges <- arrange(edges,year,target,source)
