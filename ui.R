@@ -16,7 +16,7 @@ shinyUI(pageWithSidebar(
   ),
   
   mainPanel(
-    includeHTML("graph-test.js"),
+    includeHTML("graph.js"),
     reactiveNetwork(outputId = "chart")
   )
 ))
