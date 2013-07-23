@@ -21,7 +21,7 @@ marker#supportive {
 path.link.supportive {
   stroke: green;
   stroke-dasharray: 0,2 1;
-  opacity: 0.5;
+  opacity: 0.75;
 }
 
 marker#opposingdirected {
@@ -31,7 +31,7 @@ marker#opposingdirected {
 path.link.opposingdirected {
   stroke: red;
   stroke-dasharray: 0,2 1;
-  opacity: 0.5
+  opacity: 0.35;
 }
 
 
@@ -55,8 +55,6 @@ text.shadow {
 </style>
 
 <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?1.29.1"></script>
-<script type="text/javascript" src="http://mbostock.github.com/d3/d3.geom.js?1.29.1"></script>
-<script type="text/javascript" src="http://mbostock.github.com/d3/d3.layout.js?1.29.1"></script>
 <script type="text/javascript">var networkOutputBinding = new Shiny.OutputBinding();
   $.extend(networkOutputBinding, {
     find: function(scope) {
@@ -87,12 +85,12 @@ text.shadow {
         link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
         link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
       });
-
+      
       var force = d3.layout.force()
           .nodes(d3.values(nodes))
           .links(links)
           .size([w, h])
-          .linkDistance(100)
+          .linkDistance(function(x) { return x.distance; })
           .charge(-300)
           .on("tick", tick)
           .start();

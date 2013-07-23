@@ -61,6 +61,9 @@ edges <- rbind(edges,data.frame(year=df.exp[ind,'YEAR'],
 edges <- unique(edges)
 
 edges <- arrange(edges,year,target,source)
+edges[,'distance'] <- 200
+edges[which(edges[,'type']=='supportive'),'distance'] <- 100
+edges[which(edges[,'type']=='opposing'),'distance'] <- 50
 
 # Write edge list out to CSV
 write.csv(edges,'./data/edge_list.csv',row.names=F)

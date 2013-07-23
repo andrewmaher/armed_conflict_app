@@ -7,7 +7,7 @@ reactiveNetwork <- function (outputId)
 
 shinyUI(pageWithSidebar(
   
-  headerPanel("Armed Conflict"),
+  headerPanel("History of Armed Conflict (1946-2012)"),
   sidebarPanel(
 
     sliderInput("year", "Year:",format="####.",
